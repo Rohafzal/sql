@@ -33,7 +33,7 @@ There are 10 tables in the Main Window:
 5) product
 6) product_category
 7) vendor
-8) vendor_booth_assignments
+8) vendor_booth_assignmentsm
 9) vendor_inventory
 10) zip_data
 
@@ -75,4 +75,7 @@ Please do not pick the exact same tables that I have already diagramed. For exam
 	- These are the tables that are connected
 	-  ![01_farmers_market_conceptual_model.png](./images/01_farmers_market_conceptual_model.png)
 - The column names can be found in a few spots (DB Schema window in the bottom right, the Database Structure tab in the main window by expanding each table entry, at the top of the Browse Data tab in the main window)
+
+Please see the attached image for homework1 task
+![Homework1](./images/Homework1.png)
 
