@@ -2,7 +2,10 @@
 /* 1. Write a query that determines how many times each vendor has rented a booth 
 at the farmer’s market by counting the vendor booth assignments per vendor_id. */
 
-
+SELECT  vendor_id, COUNT(*) as both_rentals
+FROM vendor_booth_assignments
+GROUP BY vendor_id
+ORDER BY both_rentals DESC
 
 /* 2. The Farmer’s Market Customer Appreciation Committee wants to give a bumper 
 sticker to everyone who has ever spent more than $2000 at the market. Write a query that generates a list 
@@ -10,7 +13,15 @@ of customers for them to give stickers to, sorted by last name, then first name.
 
 HINT: This query requires you to join two tables, use an aggregate function, and use the HAVING keyword. */
 
-
+SELECT 
+cp.customer_id, c.customer_first_name, c.customer_last_name
+,SUM(cp.quantity*cp.cost_to_customer_per_qty) as cost
+FROM customer_purchases cp
+INNER JOIN customer c
+ON c.customer_id = cp.customer_id
+GROUP BY cp.customer_id
+HAVING SUM(cp.quantity*cp.cost_to_customer_per_qty) > 2000
+ORDER BY c.customer_last_name, c.customer_first_name
 
 --Temp Table
 /* 1. Insert the original vendor table into a temp.new_vendor and then add a 10th vendor: 
@@ -20,21 +31,40 @@ HINT: This is two total queries -- first create the table from the original, the
 When inserting the new vendor, you need to appropriately align the columns to be inserted 
 (there are five columns to be inserted, I've given you the details, but not the syntax) 
 
+
 -> To insert the new row use VALUES, specifying the value you want for each column:
 VALUES(col1,col2,col3,col4,col5) 
 */
 
+DROP TABLE IF EXISTS temp.new_vendor;
+CREATE TEMP TABLE IF NOT EXISTS temp.new_vendor as 
+SELECT * FROM vendor
+
+INSERT INTO temp.new_vendor(vendor_id, vendor_name, vendor_type, vendor_owner_first_name, vendor_owner_last_name)
+VALUES (10, 'Thomas Superfood Store', 'Fresh Focused', 'Thomas', 'Rosenthal');
 
 
 -- Date
-/*1. Get the customer_id, month, and year (in separate columns) of every purchase in the customer_purchases table.
+/*1. Get the customer_id, month, and year (in separate columns) of every purchase in the customer_purchases table.*/
 
-HINT: you might need to search for strfrtime modifers sqlite on the web to know what the modifers for month 
+SELECT strftime('%Y', market_date) AS year,
+       strftime('%m', market_date) AS month,
+       strftime('%d', market_date) AS day
+FROM customer_purchases
+
+
+/*HINT: you might need to search for strfrtime modifers sqlite on the web to know what the modifers for month 
 and year are! */
 
 /* 2. Using the previous query as a base, determine how much money each customer spent in April 2022. 
-Remember that money spent is quantity*cost_to_customer_per_qty. 
+Remember that money spent is quantity*cost_to_customer_per_qty. */
 
-HINTS: you will need to AGGREGATE, GROUP BY, and filter...
+SELECT customer_id, SUM(quantity*cost_to_customer_per_qty) as cost,market_date
+-- strftime('%Y', market_date) AS year, strftime('%m', market_date) AS month, strftime('%d', market_date) AS day
+FROM customer_purchases
+WHERE strftime('%Y-%m', market_date) = '2022-04'
+GROUP BY customer_id
+
+/*HINTS: you will need to AGGREGATE, GROUP BY, and filter...
 but remember, STRFTIME returns a STRING for your WHERE statement!! */
 
