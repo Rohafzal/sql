@@ -9,6 +9,26 @@ Think a bit about the row counts: how many distinct vendors, product names are t
 How many customers are there (y). 
 Before your final group by you should have the product of those two queries (x*y).  */
 
+-- Step 1: Calculate potential sales for each vendor and product per customer
+SELECT 
+    v.vendor_name,
+    p.product_name,
+    c.customer_first_name,
+	c.customer_last_name,
+    SUM(5 * vi.original_price) AS potential_sales
+FROM 
+    vendor_inventory vi
+INNER JOIN 
+    vendor v ON vi.vendor_id = v.vendor_id
+INNER JOIN 
+    product p ON vi.product_id = p.product_id
+CROSS JOIN 
+    customer c  -- Assume there is a customer table with customer info
+GROUP BY 
+    v.vendor_name, 
+    p.product_name,
+	c.customer_first_name,
+	c.customer_last_name
 
 
 -- INSERT
@@ -17,17 +37,36 @@ This table will contain only products where the `product_qty_type = 'unit'`.
 It should use all of the columns from the product table, as well as a new column for the `CURRENT_TIMESTAMP`.  
 Name the timestamp column `snapshot_timestamp`. */
 
+CREATE TABLE product_units AS
+SELECT 
+    *,
+    CURRENT_TIMESTAMP AS snapshot_timestamp  -- Add a timestamp column
+FROM 
+    product
+WHERE 
+    product_qty_type = 'unit';  -- Filter for products with qty type 'unit'
 
 
 /*2. Using `INSERT`, add a new row to the product_units table (with an updated timestamp). 
 This can be any product you desire (e.g. add another record for Apple Pie). */
 
+INSERT INTO product_units (product_id, product_name, product_size, product_category_id, product_qty_type, snapshot_timestamp)
+VALUES (7, 'Apple Pie', '10"', '3', 'unit', CURRENT_TIMESTAMP);
 
 
 -- DELETE
 /* 1. Delete the older record for the whatever product you added. 
 
 HINT: If you don't specify a WHERE clause, you are going to have a bad time.*/
+
+
+DELETE FROM product_units
+WHERE product_name = 'Apple Pie'
+AND snapshot_timestamp = (
+    SELECT MAX(snapshot_timestamp) 
+    FROM product_units 
+    WHERE product_name = 'Apple Pie'
+);
 
 
 
@@ -48,4 +87,26 @@ Finally, make sure you have a WHERE statement to update the right row,
 	you'll need to use product_units.product_id to refer to the correct row within the product_units table. 
 When you have all of these components, you can run the update statement. */
 
+-- Step 1: Create a temporary table to hold the latest quantities
+CREATE TEMP TABLE LatestQuantities AS
+SELECT vi.product_id,
+       COALESCE(vi.quantity, 0) AS latest_quantity
+FROM vendor_inventory vi
+JOIN (
+    SELECT product_id, MAX(market_date) AS max_date
+    FROM vendor_inventory
+    GROUP BY product_id
+) AS latest ON vi.product_id = latest.product_id AND vi.market_date = latest.max_date;
+
+-- Step 2: Update the product_units table using the temporary table
+UPDATE product_units
+SET current_quantity = (
+    SELECT latest_quantity
+    FROM LatestQuantities
+    WHERE product_units.product_id = LatestQuantities.product_id
+)
+WHERE product_id IN (
+    SELECT product_id
+    FROM LatestQuantities
+);
 
